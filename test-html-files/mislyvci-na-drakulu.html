@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мисливці на Дракулу</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .game-container { max-width: 1800px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ff6b6b;
+            text-shadow: 0 0 20px rgba(255,107,107,0.7);
+            font-size: 2.5em;
+        }
+        
+        .game-setup {
+            background: rgba(255,255,255,0.05);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .heroes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .hero-card {
+            background: linear-gradient(135deg, #2d3436 0%, #1e272e 100%);
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+        }
+        .hero-card:hover {
+            transform: translateY(-5px);
+            border-color: #ffd700;
+            box-shadow: 0 10px 30px rgba(255,215,0,0.3);
+        }
+        .hero-card.selected {
+            border-color: #ff6b6b;
+            background: linear-gradient(135deg, #8B0000 0%, #DC143C 100%);
+        }
+        
+        .game-board { display: none; gap: 15px; }
+        .game-board.active { 
+            display: grid; 
+            grid-template-columns: 300px 1fr 350px;
+        }
+        .panel {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .board-wrapper { 
+            position: relative; 
+            width: 100%; 
+            max-width: 1200px; 
+            margin: 0 auto;
+            background: linear-gradient(135deg, #8B4513, #CD853F, #D2B48C);
+            border-radius: 15px;
+            border: 8px solid #654321;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            overflow: hidden;
+            min-height: 600px;
+        }
+        .board-image {
+            width: 100%;
+            height: auto;
+            min-height: 600px;
+            display: block;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #8B4513, #CD853F, #D2B48C);
+        }
+        .board-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(139, 69, 19, 0.1) 2px, transparent 3px),
+                radial-gradient(circle at 80% 70%, rgba(205, 133, 63, 0.1) 2px, transparent 3px),
+                radial-gradient(circle at 60% 20%, rgba(160, 82, 45, 0.1) 1px, transparent 2px);
+            background-size: 50px 50px, 80px 80px, 30px 30px;
+        }
+        
+        .player-token {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.9), 0 0 20px rgba(255,255,255,0.7);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Плавніша анімація */
+            z-index: 100;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+        }
+        .player-token.active {
+            animation: pulse 1.5s infinite;
+            border-width: 5px;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.9), 0 0 30px rgba(255,215,0,1);
+            width: 55px;
+            height: 55px;
+            font-size: 24px;
+        }
+        .player-token.moving {
+            transform: translate(-50%, -50%) scale(1.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.9), 0 0 25px rgba(255,215,0,0.8);
+            z-index: 110;
+        }
+        @keyframes pulse {
+            0%, 100% { 
+                transform: translate(-50%, -50%) scale(1); 
+                box-shadow: 0 6px 25px rgba(0,0,0,0.9), 0 0 30px rgba(255,215,0,1);
+            }
+            50% { 
+                transform: translate(-50%, -50%) scale(1.2); 
+                box-shadow: 0 6px 30px rgba(0,0,0,0.9), 0 0 40px rgba(255,215,0,1);
+            }
+        }
+        
+        button {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255,107,107,0.4);
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button.secondary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+        button.success {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: linear-gradient(135deg, #2d3436 0%, #1e272e 100%);
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .inventory-item {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        .inventory-item:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: #ffd700;
+            transform: translateY(-3px);
+        }
+        .inventory-item.usable {
+            border-color: #27ae60;
+        }
+        .inventory-item .count {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+            margin: 15px 0; 
+        }
+        .stat-item {
+            background: rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-item .label {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        .stat-item .value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .artifacts-display { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+            margin: 10px 0; 
+        }
+        .artifact-badge {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(255,215,0,0.3);
+            border: 2px solid #fff;
+        }
+        .artifact-badge.level-1 { background: linear-gradient(135deg, #3498db 0%, #5dade2 100%); color: #fff; }
+        .artifact-badge.level-2 { background: linear-gradient(135deg, #27ae60 0%, #58d68d 100%); color: #fff; }
+        .artifact-badge.level-3 { background: linear-gradient(135deg, #e74c3c 0%, #ec7063 100%); color: #fff; }
+        .artifact-badge.level-4 { background: linear-gradient(135deg, #8e44ad 0%, #bb8fce 100%); color: #fff; }
+        .artifact-badge.level-5 { background: linear-gradient(135deg, #f39c12 0%, #f8c471 100%); color: #333; }
+        
+        .companions-list { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+            margin: 10px 0; 
+        }
+        .companion-badge {
+            background: linear-gradient(135deg, #16a085 0%, #48c9b0 100%);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(22,160,133,0.3);
+        }
+        .companion-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(22,160,133,0.5);
+        }
+        
+        .log {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .dice-display {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 2em;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        
+        .player-item {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+        .player-item.current {
+            background: rgba(255,215,0,0.1);
+            border-left-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255,215,0,0.3);
+        }
+        
+        .ability-btn {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 10px 0;
+            width: 100%;
+            text-align: left;
+            transition: all 0.3s;
+        }
+        .ability-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            transform: translateX(5px);
+        }
+        .ability-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        h2, h3 { 
+            margin-bottom: 15px; 
+            color: #ffd700; 
+        }
+        
+        .hero-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        .armor { color: #3498db; }
+        .start-gold { color: #ffd700; }
+        .ability-text {
+            font-size: 0.85em;
+            color: #aaa;
+            font-style: italic;
+            margin-top: 8px;
+        }
+        
+        select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background: #2d3436;
+            color: #fff;
+            font-size: 1em;
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .section-divider {
+            border-top: 2px solid rgba(255,255,255,0.1);
+            margin: 20px 0;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🧛 Мисливці на Дракулу 🗡️</h1>
+        
+        <div class="game-setup" id="gameSetup">
+            <h2>Налаштування гри</h2>
+            <div style="margin-bottom: 20px;">
+                <label>
+                    Кількість гравців:
+                    <select id="playerCount" onchange="updateHeroSelection()">
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4" selected>4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                    </select>
+                </label>
+            </div>
+            <h3>Виберіть героїв:</h3>
+            <div class="heroes-grid" id="heroesGrid"></div>
+            <div style="text-align: center; margin-top: 30px;">
+                <button onclick="startGame()" style="font-size: 1.2em; padding: 15px 40px;">
+                    🎮 Почати гру
+                </button>
+            </div>
+        </div>
+        
+        <div class="game-board" id="gameBoard">
+            <div class="panel">
+                <h3>Гравці</h3>
+                <div id="playersList"></div>
+            </div>
+            
+            <div class="panel">
+                <div class="board-wrapper">
+                    <img id="boardImage" src="board.png" alt="Game Board" class="board-image">
+                    <div class="board-overlay" id="boardOverlay"></div>
+                </div>
+                <div class="log" id="gameLog"></div>
+            </div>
+            
+            <div class="panel">
+                <h3>Поточний гравець</h3>
+                <div id="currentPlayerInfo"></div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button onclick="rollDice()" id="rollBtn">🎲 Кинути кубик</button>
+                    <div class="dice-display" id="diceDisplay"></div>
+                    <button onclick="endTurn()" id="endTurnBtn" style="display: none;">
+                        ✅ Закінчити хід
+                    </button>
+                    
+                    <!-- Кнопка для входу в місто якщо стоїмо на ньому -->
+                    <button onclick="enterCityFromLocation()" id="enterCityBtn" style="display: none;" class="secondary">
+                        🏛️ Зайти в місто
+                    </button>
+                </div>
+                
+                <div class="section-divider">
+                    <h3>Інвентар та вміння</h3>
+                    <button onclick="showInventory()" class="secondary">
+                        🎒 Відкрити інвентар
+                    </button>
+                    <button onclick="showAbilities()" class="secondary">
+                        ⚡ Використати вміння
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальні вікна -->
+    <div class="modal" id="monsterModal">
+        <div class="modal-content">
+            <h2>⚔️ Бій з монстром!</h2>
+            <div id="monsterContent"></div>
+        </div>
+    </div>
+    
+    <div class="modal" id="ruinsModal">
+        <div class="modal-content">
+            <h2>🏛️ Руїни</h2>
+            <div id="ruinsContent"></div>
+        </div>
+    </div>
+    
+    <div class="modal" id="cityModal">
+        <div class="modal-content">
+            <h2>🏛️ Місто</h2>
+            <div id="cityContent"></div>
+        </div>
+    </div>
+    
+    <div class="modal" id="goldModal">
+        <div class="modal-content">
+            <h2>💰 Знахідка!</h2>
+            <div id="goldContent"></div>
+        </div>
+    </div>
+    
+    <div class="modal" id="adventureModal">
+        <div class="modal-content">
+            <h2>🔥 Карта пригод!</h2>
+            <div id="adventureContent"></div>
+        </div>
+    </div>
+    
+    <div class="modal" id="inventoryModal">
+        <div class="modal-content">
+            <h2>🎒 Інвентар</h2>
+            <div id="inventoryContent"></div>
+        </div>
+    </div>
+    
+    <div class="modal" id="abilitiesModal">
+        <div class="modal-content">
+            <h2>⚡ Вміння</h2>
+            <div id="abilitiesContent"></div>
+        </div>
+    </div>
+
+    <script>
+// Типи артефактів
+const ARTIFACT_TYPES = [
+    { name: 'Вогонь', icon: '🔥', color: '#ff4757' },
+    { name: 'Вода', icon: '💧', color: '#3742fa' },
+    { name: 'Повітря', icon: '🌪️', color: '#57606f' },
+    { name: 'Природа', icon: '🌿', color: '#2ed573' },
+    { name: 'Блискавка', icon: '⚡', color: '#ffd700' },
+    { name: 'Дракон', icon: '🐲', color: '#8e44ad' }
+];
+
+// ДАНІ ГРИ
+const HEROES = [
+    { name: 'Воїн', armor: 4, gold: 7, color: '#ff6b6b', ability: '+1 у бою проти монстрів 4-5 рівня', abilityType: 'passive' },
+    { name: 'Найманець', armor: 4, gold: 5, color: '#ff8a5b', ability: '+2💰 на локації "Знахідка"', abilityType: 'passive' },
+    { name: 'Ілюзіоніст', armor: 1, gold: 9, color: '#8e44ad', ability: 'Може мати 2 супутники', abilityType: 'passive' },
+    { name: 'Маг', armor: 1, gold: 9, color: '#9b59b6', ability: 'Перекидає Сувої Удачі', abilityType: 'active' },
+    { name: 'Алхімік', armor: 2, gold: 8, color: '#27ae60', ability: 'В Руїнах може взяти 2 карти', abilityType: 'passive' },
+    { name: 'Кузнець', armor: 4, gold: 6, color: '#f39c12', ability: '2 артефакти → +1 рівень', abilityType: 'active' },
+    { name: 'Злодій', armor: 2, gold: 7, color: '#34495e', ability: 'Може вкрасти предмет', abilityType: 'active' },
+    { name: 'Торговець', armor: 1, gold: 10, color: '#e67e22', ability: 'Знижка -3💰 в Місті', abilityType: 'passive' },
+    { name: 'Мисливець', armor: 1, gold: 6, color: '#16a085', ability: 'Стрибок на "Монстра"', abilityType: 'active' },
+    { name: 'Знахар', armor: 2, gold: 8, color: '#2ecc71', ability: 'За перемогу: +⚡+💰', abilityType: 'passive' }
+];
+
+const COMPANIONS = [
+    { name: 'Єдиноріг', ability: 'Поміняй місцями цифри кубика', type: 'active' },
+    { name: 'Грифон', ability: 'Стрибок на найближчого монстра', type: 'active' },
+    { name: 'Кінь', ability: '+2 кроки вперед', type: 'active' },
+    { name: 'Вовк', ability: '+1 у бою проти монстрів 1-3 рівня', type: 'passive' },
+    { name: 'Дракон', ability: 'Під час бою: 1 з 5 артефактів на вибір', type: 'passive' },
+    { name: 'Павук', ability: 'Імунітет від фізичних дій', type: 'passive' },
+    { name: 'Черепаха', ability: 'Імунітет від пасток', type: 'passive' },
+    { name: 'Віслюк', ability: 'Можна мати 6 карт (замість 3)', type: 'passive' },
+    { name: 'Білка', ability: '+1💰 за використання еліксирів/сувоїв', type: 'passive' }
+];
+
+const MONSTERS = [
+    { name: 'Гоблін', level: 1, gold: 1 },
+    { name: 'Гігантський Павук', level: 1, gold: 1 },
+    { name: 'Скелети', level: 2, gold: 2 },
+    { name: 'Вампірський Кажан', level: 2, gold: 2 },
+    { name: 'Гаргулья', level: 3, gold: 3 },
+    { name: 'Троль', level: 3, gold: 3 },
+    { name: 'Відьма', level: 4, gold: 4 },
+    { name: 'Вовкулак', level: 4, gold: 4 },
+    { name: 'Привид', level: 5, gold: 5 },
+    { name: 'Вампір', level: 5, gold: 5 }
+];
+
+// Позиції дошки
+const BOARD_POSITIONS = [];
+const locationTypes = [
+    { type: 'start' }, { type: 'gold', amount: 3 }, { type: 'ruins' }, { type: 'gold', amount: 2 },
+    { type: 'gold', amount: 2 }, { type: 'city' }, { type: 'gold', amount: 1 }, { type: 'monster', level: 2 },
+    { type: 'ruins' }, { type: 'adventure' }, { type: 'monster', level: 2 }, { type: 'adventure' },
+    { type: 'city' }, { type: 'city' }, { type: 'monster', level: 3 }, { type: 'gold', amount: 3 },
+    { type: 'gold', amount: 2 }, { type: 'ruins' }, { type: 'gold', amount: 2 }, { type: 'monster', level: 3 },
+    { type: 'adventure' }, { type: 'gold', amount: 2 }, { type: 'monster', level: 3 }, { type: 'ruins' },
+    { type: 'adventure' }, { type: 'gold', amount: 2 }, { type: 'city' }, { type: 'monster', level: 3 },
+    { type: 'gold', amount: 2 }, { type: 'adventure' }, { type: 'gold', amount: 2 }, { type: 'city' },
+    { type: 'ruins' }, { type: 'adventure' }, { type: 'gold', amount: 2 }, { type: 'monster', level: 4 },
+    { type: 'gold', amount: 3 }, { type: 'city' }, { type: 'gold', amount: 2 }, { type: 'adventure' },
+    { type: 'gold', amount: 2 }, { type: 'ruins' }, { type: 'monster', level: 4 }, { type: 'gold', amount: 2 },
+    { type: 'city' }, { type: 'ruins' }, { type: 'monster', level: 4 }, { type: 'gold', amount: 3 },
+    { type: 'adventure' }, { type: 'monster', level: 4 }, { type: 'gold', amount: 2 }, { type: 'city' },
+    { type: 'ruins' }, { type: 'monster', level: 5 }, { type: 'adventure' }, { type: 'gold', amount: 1 },
+    { type: 'ruins' }, { type: 'gold', amount: 2 }, { type: 'adventure' }, { type: 'gold', amount: 3 },
+    { type: 'ruins' }, { type: 'monster', level: 5 }, { type: 'gold', amount: 3 }, { type: 'ruins' },
+    { type: 'adventure' }, { type: 'monster', level: 5 }, { type: 'gold', amount: 2 }, { type: 'monster', level: 5 },
+    { type: 'adventure' }, { type: 'monster', level: 5 }
+];
+
+// Повноекранна зигзагоподібна карта
+const cols = 14;
+const rows = 5;
+const marginX = 8.5; // 120px від краю у відсотках (120/1400*100)
+const marginY = 13.3; // 120px від краю у відсотках (120/900*100) 
+const spacingX = (100 - 2 * marginX) / (cols - 1); // відстань між колонками у відсотках
+const spacingY = (100 - 2 * marginY - 16.7) / (rows - 1); // відстань між рядками у відсотках (віднімаємо 150px для замку)
+
+for (let i = 0; i < locationTypes.length; i++) {
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    
+    let x, y;
+    if (row % 2 === 0) {
+        // Ліворуч направо
+        x = marginX + col * spacingX;
+    } else {
+        // Праворуч наліво (зигзаг)
+        x = marginX + (cols - 1 - col) * spacingX;
+    }
+    y = marginY + row * spacingY;
+    
+    BOARD_POSITIONS.push({ x: x, y: y, ...locationTypes[i] });
+}
+
+// Замок внизу по центру
+BOARD_POSITIONS.push({ 
+    x: 50, 
+    y: 100 - 13.3, // 86.7% від верху (120px від низу)
+    type: 'castle' 
+});
+
+// Стан гри
+let gameState = {
+    players: [], currentPlayerIndex: 0, selectedHeroes: [],
+    diceRolled: false, moveComplete: false, pendingActions: []
+};
+
+// Функції
+function loadBoardImage() {
+    const img = document.getElementById('boardImage');
+    img.src = 'board.png';
+    img.onload = () => console.log('Board loaded!');
+    img.onerror = () => alert('Помилка завантаження карти!');
+}
+
+function updateHeroSelection() {
+    const count = parseInt(document.getElementById('playerCount').value);
+    const grid = document.getElementById('heroesGrid');
+    grid.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+        const card = document.createElement('div');
+        card.className = 'hero-card';
+        card.innerHTML = `
+            <h3>Гравець ${i + 1}</h3>
+            <select id="heroSelect${i}" onchange="selectHero(${i}, this.value)">
+                <option value="">- Виберіть героя -</option>
+                ${HEROES.map((h, idx) => `<option value="${idx}">${h.name}</option>`).join('')}
+            </select>
+            <div id="heroPreview${i}" style="margin-top: 15px;"></div>
+        `;
+        grid.appendChild(card);
+    }
+}
+
+function selectHero(playerIndex, heroIndex) {
+    if (heroIndex === '') return;
+    const hero = HEROES[heroIndex];
+    const preview = document.getElementById(`heroPreview${playerIndex}`);
+    const card = document.getElementById(`heroSelect${playerIndex}`).parentElement;
+    preview.innerHTML = `
+        <div class="hero-stats">
+            <span class="armor">🛡️ ${hero.armor}</span>
+            <span class="start-gold">💰 ${hero.gold}</span>
+        </div>
+        <div class="ability-text">${hero.ability}</div>
+    `;
+    card.classList.add('selected');
+    gameState.selectedHeroes[playerIndex] = heroIndex;
+}
+
+function startGame() {
+    const playerCount = parseInt(document.getElementById('playerCount').value);
+    for (let i = 0; i < playerCount; i++) {
+        if (!gameState.selectedHeroes[i] && gameState.selectedHeroes[i] !== 0) {
+            alert('Виберіть героїв для всіх гравців!'); return;
+        }
+    }
+    gameState.players = [];
+    for (let i = 0; i < playerCount; i++) {
+        const hero = HEROES[gameState.selectedHeroes[i]];
+        gameState.players.push({
+            id: i, name: `Гравець ${i + 1}`, hero: hero.name, heroData: hero, color: hero.color,
+            position: 0, health: 3, gold: hero.gold, armor: hero.armor, 
+            artifacts: {
+                // Структура: artifacts[type][level] = count
+                'Вогонь': {}, 'Вода': {}, 'Повітря': {}, 'Природа': {}, 'Блискавка': {}, 'Дракон': {}
+            },
+            companions: [], weapons: { rope: 0, axe: 0, dagger: 0, ring: 0 },
+            elixirs: { speed: 0, luck: 0 }, traps: 5, adventureCards: [], usedLuckScrolls: []
+        });
+    }
+    document.getElementById('gameSetup').style.display = 'none';
+    document.getElementById('gameBoard').classList.add('active');
+    document.querySelector('h1').style.display = 'none';
+    updateDisplay();
+    addLog('🎮 Гра почалась!');
+    addLog(`--- ${gameState.players[gameState.currentPlayerIndex].name} ---`);
+}
+
+function updateDisplay() {
+    updatePlayersList(); updateCurrentPlayerInfo(); updatePlayerTokens();
+}
+
+function updatePlayersList() {
+    const list = document.getElementById('playersList');
+    list.innerHTML = '';
+    gameState.players.forEach((player, index) => {
+        const artifactsList = [];
+        
+        // Показуємо артефакти по типах
+        ARTIFACT_TYPES.forEach(type => {
+            const typeArtifacts = player.artifacts[type.name];
+            if (typeArtifacts && Object.keys(typeArtifacts).length > 0) {
+                let typeDisplay = `<div style="margin: 4px 0;"><strong>${type.icon} ${type.name}:</strong> `;
+                const levels = [];
+                for (let level = 1; level <= 5; level++) {
+                    const count = typeArtifacts[level] || 0;
+                    if (count > 0) {
+                        levels.push(`${level}★×${count}`);
+                    }
+                }
+                if (levels.length > 0) {
+                    typeDisplay += levels.join(', ');
+                    typeDisplay += '</div>';
+                    artifactsList.push(typeDisplay);
+                }
+            }
+        });
+
+        const playerItem = document.createElement('div');
+        playerItem.className = `player-item ${index === gameState.currentPlayerIndex ? 'current' : ''}`;
+        playerItem.style.borderLeftColor = player.color;
+        playerItem.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <strong>${player.name}</strong>
+                <div style="font-size: 0.9em; opacity: 0.8;">${player.hero}</div>
+            </div>
+            <div style="font-size: 0.85em; display: flex; gap: 15px;">
+                <span>❤️ ${player.health}</span> <span>💰 ${player.gold}</span>
+                <span>🛡️ ${player.armor}</span> <span>📍 ${player.position}</span>
+            </div>
+            ${artifactsList.length > 0 ? `<div style="margin-top: 8px; font-size: 0.8em;">${artifactsList.join('')}</div>` : ''}
+        `;
+        list.appendChild(playerItem);
+    });
+}
+
+function updateCurrentPlayerInfo() {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    const info = document.getElementById('currentPlayerInfo');
+    
+    // Формуємо список артефактів по типах
+    let artifactsDisplay = '';
+    ARTIFACT_TYPES.forEach(type => {
+        const typeArtifacts = player.artifacts[type.name];
+        if (typeArtifacts && Object.keys(typeArtifacts).length > 0) {
+            let hasArtifacts = false;
+            let typeHtml = `<div style="margin: 8px 0;"><strong>${type.icon} ${type.name}:</strong> `;
+            const badges = [];
+            
+            for (let level = 1; level <= 5; level++) {
+                const count = typeArtifacts[level] || 0;
+                if (count > 0) {
+                    hasArtifacts = true;
+                    badges.push(`<span class="artifact-badge level-${level}" style="background-color: ${type.color}; color: white; margin: 2px;">${level}★ x${count}</span>`);
+                }
+            }
+            
+            if (hasArtifacts) {
+                typeHtml += badges.join(' ') + '</div>';
+                artifactsDisplay += typeHtml;
+            }
+        }
+    });
+    
+    info.innerHTML = `
+        <div style="text-align: center; margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 2px solid ${player.color};">
+            <h2 style="margin-bottom: 10px;">${player.name}</h2>
+            <div style="font-size: 1.2em; margin-bottom: 10px;">⚔️ ${player.hero}</div>
+            <div class="stats-grid">
+                <div class="stat-item"><div class="label">Здоров'я</div><div class="value" style="color: #e74c3c;">❤️ ${player.health}</div></div>
+                <div class="stat-item"><div class="label">Золото</div><div class="value" style="color: #ffd700;">💰 ${player.gold}</div></div>
+                <div class="stat-item"><div class="label">Броня</div><div class="value" style="color: #3498db;">🛡️ ${player.armor}</div></div>
+                <div class="stat-item"><div class="label">Пастки</div><div class="value">🎯 ${player.traps}</div></div>
+            </div>
+            ${artifactsDisplay ? `<div style="margin-top: 15px;"><strong>Артефакти:</strong>${artifactsDisplay}</div>` : ''}
+            ${player.companions.length > 0 ? `<div style="margin-top: 15px;"><strong>Супутники:</strong><div class="companions-list">${player.companions.map(c => `<span class="companion-badge" title="${c.ability}">${c.name}</span>`).join('')}</div></div>` : ''}
+            <div style="margin-top: 15px; font-size: 0.9em;">
+                <div>⚡ Еліксири швидкості: ${player.elixirs.speed}</div>
+                <div>🍀 Сувій удачі: ${player.elixirs.luck}</div>
+                <div>🃏 Карти пригод: ${player.adventureCards.length}</div>
+            </div>
+        </div>
+    `;
+    const rollBtn = document.getElementById('rollBtn'), endTurnBtn = document.getElementById('endTurnBtn');
+    const enterCityBtn = document.getElementById('enterCityBtn');
+    
+    rollBtn.disabled = gameState.diceRolled || gameState.moveComplete;
+    rollBtn.style.opacity = (gameState.diceRolled || gameState.moveComplete) ? '0.5' : '1';
+    endTurnBtn.style.display = gameState.moveComplete ? 'inline-block' : 'none';
+    
+    // Показуємо кнопку входу в місто якщо стоїмо на локації "місто"
+    const currentLocation = BOARD_POSITIONS[player.position];
+    if (currentLocation.type === 'city' && gameState.moveComplete) {
+        enterCityBtn.style.display = 'inline-block';
+    } else {
+        enterCityBtn.style.display = 'none';
+    }
+}
+
+function updatePlayerTokens(animate = false) {
+    const overlay = document.getElementById('boardOverlay');
+    if (!animate) overlay.innerHTML = '';
+    gameState.players.forEach((player, index) => {
+        const pos = BOARD_POSITIONS[player.position];
+        let token = document.getElementById(`token-${player.id}`);
+        if (!token) {
+            token = document.createElement('div');
+            token.id = `token-${player.id}`;
+            token.className = 'player-token';
+            overlay.appendChild(token);
+        }
+        
+        // Додаємо клас руху під час анімації
+        const wasMoving = token.classList.contains('moving');
+        token.className = `player-token ${index === gameState.currentPlayerIndex ? 'active' : ''}`;
+        if (animate && !wasMoving) {
+            token.classList.add('moving');
+            setTimeout(() => token.classList.remove('moving'), 400);
+        }
+        
+        token.style.backgroundColor = player.color;
+        const heroSymbols = ['⚔️', '🗡️', '🎭', '🔮', '⚗️', '🔨', '🗝️', '💰', '🏹', '🌿'];
+        const heroIndex = HEROES.findIndex(h => h.name === player.hero);
+        token.textContent = heroSymbols[heroIndex] || (player.id + 1);
+        token.style.fontSize = '24px';
+        const samePos = gameState.players.filter(p => p.position === player.position);
+        let offsetX = 0, offsetY = 0;
+        if (samePos.length > 1) {
+            const idx = samePos.indexOf(player);
+            const angle = (idx / samePos.length) * Math.PI * 2;
+            offsetX = Math.cos(angle) * 25; offsetY = Math.sin(angle) * 25;
+        }
+        token.style.left = `calc(${pos.x}% + ${offsetX}px)`;
+        token.style.top = `calc(${pos.y}% + ${offsetY}px)`;
+        token.title = `${player.name}\nПозиція: ${player.position}\nЛокація: ${pos.type}`;
+    });
+}
+
+// ВИПРАВЛЕНІ функції ходів з багами!
+function rollDice() {
+    if (gameState.diceRolled) { alert('Ви вже кинули кубик цим ходом!'); return; }
+    const roll = Math.floor(Math.random() * 6) + 1;
+    document.getElementById('diceDisplay').innerHTML = `
+        <div>🎲 ${roll}</div>
+        <div style="font-size: 0.4em; margin-top: 10px;">
+            <button onclick="movePlayer(${roll})" class="success">➡️ Рухатися</button>
+        </div>
+    `;
+    gameState.diceRolled = true;
+    addLog(`${gameState.players[gameState.currentPlayerIndex].name} кинув: ${roll}`);
+    updateDisplay();
+}
+
+function movePlayer(steps) {
+    if (gameState.moveComplete) { alert('Ви вже зробили хід! Закінчіть свій хід.'); return; }
+    const player = gameState.players[gameState.currentPlayerIndex];
+    const oldPos = player.position;
+    const newPos = Math.min(player.position + steps, 70);
+    
+    addLog(`${player.name} рухається на ${steps} кроків: ${oldPos} → ${newPos}`);
+    
+    // Покрокова анімація руху
+    let currentStep = 0;
+    const animateStep = () => {
+        if (currentStep < steps && (oldPos + currentStep) < 70) {
+            player.position = oldPos + currentStep + 1;
+            updatePlayerTokens(true);
+            currentStep++;
+            setTimeout(animateStep, 300); // 300ms між кроками
+        } else {
+            player.position = newPos;
+            updatePlayerTokens(true);
+            updateDisplay();
+            setTimeout(() => { 
+                document.getElementById('diceDisplay').innerHTML = ''; 
+                handleLocation(); 
+            }, 800);
+        }
+    };
+    
+    animateStep();
+}
+
+function handleLocation() {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    const location = BOARD_POSITIONS[player.position];
+    
+    // Якщо гравець стоїть на місті, дозволяємо зайти повторно
+    if (location.type === 'city') {
+        handleCity();
+        return;
+    }
+    
+    switch(location.type) {
+        case 'start': gameState.moveComplete = true; updateDisplay(); break;
+        case 'castle': handleCastle(); break;
+        case 'ruins': handleRuins(); break;
+        case 'gold': handleGoldFind(location.amount || 1); break;
+        case 'monster': handleMonster(location.level); break;
+        case 'adventure': handleAdventure(); break;
+        default: gameState.moveComplete = true; updateDisplay();
+    }
+}
+
+function handleCastle() {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    let hasWinCondition = false;
+    let winningType = '';
+    
+    // Перевіряємо чи є повний комплект 1-5 рівня одного типу
+    ARTIFACT_TYPES.forEach(type => {
+        const typeArtifacts = player.artifacts[type.name];
+        let hasFullSet = true;
+        
+        for (let level = 1; level <= 5; level++) {
+            if (!typeArtifacts[level] || typeArtifacts[level] < 1) {
+                hasFullSet = false;
+                break;
+            }
+        }
+        
+        if (hasFullSet) {
+            hasWinCondition = true;
+            winningType = type.name;
+        }
+    });
+    
+    if (hasWinCondition) {
+        alert(`🎉 ${player.name} переміг! Зібрав повний комплект артефактів ${winningType} (1★-5★)! Дракула повержений!`);
+    } else {
+        alert('Вам потрібен повний комплект артефактів одного типу (1★-5★) щоб перемогти Дракулу!\n\nПовернення на старт...');
+        player.position = 0; // Повертаємо на старт згідно з правилами
+        updatePlayerTokens(true);
+    }
+    
+    gameState.moveComplete = true; 
+    updateDisplay();
+}
+
+function handleGoldFind(amount) {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    let actualAmount = amount;
+    if (player.hero === 'Найманець') actualAmount += 2;
+    player.gold += actualAmount;
+    document.getElementById('goldModal').classList.add('active');
+    document.getElementById('goldContent').innerHTML = `
+        <p>Ви знайшли ${actualAmount} золота! 💰</p>
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="closeModal('goldModal')">Продовжити</button>
+        </div>
+    `;
+    addLog(`${player.name} знайшов ${actualAmount} золота!`);
+}
+
+function handleMonster(level) {
+    const monsters = MONSTERS.filter(m => m.level === level);
+    const monster = monsters[Math.floor(Math.random() * monsters.length)];
+    document.getElementById('monsterModal').classList.add('active');
+    document.getElementById('monsterContent').innerHTML = `
+        <div style="text-align: center;">
+            <h3>${monster.name} (Рівень ${monster.level})</h3>
+            <p>Виберіть свою дію:</p>
+            <div style="margin-top: 20px;">
+                <button onclick="fightMonster(${JSON.stringify(monster).replace(/"/g, '&quot;')})" class="success" style="margin: 5px;">⚔️ Битися</button>
+                <button onclick="avoidMonster()" style="margin: 5px;">🏃 Уникнути</button>
+            </div>
+        </div>
+    `;
+}
+
+function fightMonster(monster) {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    let playerPower = player.armor;
+    let weaponBonus = 0;
+    let weaponUsed = '';
+    
+    // Бонуси героїв
+    if (player.hero === 'Воїн' && monster.level >= 4) {
+        playerPower += 1;
+    }
+    if (player.companions.some(c => c.name === 'Вовк') && monster.level <= 3) {
+        playerPower += 1;
+    }
+    
+    // Бонуси від зброї згідно з правилами
+    if (monster.level === 2 && player.weapons.rope > 0) {
+        weaponBonus = player.weapons.rope;
+        weaponUsed = `Мотузка x${player.weapons.rope}`;
+    }
+    if (monster.level === 3 && player.weapons.axe > 0) {
+        weaponBonus = player.weapons.axe;
+        weaponUsed = `Сокира x${player.weapons.axe}`;
+    }
+    if (monster.level === 4 && player.weapons.dagger > 0) {
+        weaponBonus = player.weapons.dagger;
+        weaponUsed = `Кинжал x${player.weapons.dagger}`;
+    }
+    if (monster.level === 5 && player.weapons.ring > 0) {
+        weaponBonus = player.weapons.ring;
+        weaponUsed = `Перстень x${player.weapons.ring}`;
+    }
+    
+    playerPower += weaponBonus;
+    const roll = Math.floor(Math.random() * 6) + 1;
+    const totalPower = roll + playerPower - player.armor; // Загальна сила без броні
+    const success = totalPower > monster.level; // Треба ПЕРЕВИЩИТИ рівень монстра
+    
+    let battleDetails = `
+        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <h4>Деталі бою:</h4>
+            <div style="margin: 10px 0;">🎲 Кидок кубика: <strong>${roll}</strong></div>
+            <div style="margin: 10px 0;">🛡️ Броня: <strong>+${player.armor}</strong></div>
+            ${weaponBonus > 0 ? `<div style="margin: 10px 0;">⚔️ ${weaponUsed}: <strong>+${weaponBonus}</strong></div>` : ''}
+            <div style="margin: 10px 0; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 10px;">
+                📊 Загальна сила: <strong>${totalPower}</strong> проти <strong>${monster.level}</strong>
+            </div>
+        </div>
+    `;
+    
+    if (success) {
+        player.gold += monster.gold;
+        const artifactLevel = Math.min(monster.level, 5);
+        
+        // Вибираємо випадковий тип артефакту
+        const randomType = ARTIFACT_TYPES[Math.floor(Math.random() * ARTIFACT_TYPES.length)];
+        if (!player.artifacts[randomType.name][artifactLevel]) {
+            player.artifacts[randomType.name][artifactLevel] = 0;
+        }
+        player.artifacts[randomType.name][artifactLevel]++;
+        
+        addLog(`${player.name} переміг ${monster.name}! (${totalPower} > ${monster.level})`);
+        
+        if (player.hero === 'Знахар') { 
+            player.elixirs.speed++; 
+            player.gold++; 
+            addLog(`Знахар отримує бонус: +1⚡ +1💰`); 
+        }
+        
+        document.getElementById('monsterContent').innerHTML = `
+            <div style="text-align: center;">
+                <h3>🎉 Перемога!</h3>
+                ${battleDetails}
+                <div style="background: rgba(0,255,0,0.2); padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <div>💰 Отримано золота: +${monster.gold}</div>
+                    <div>${randomType.icon} Отримано артефакт: ${randomType.name} ${artifactLevel}★</div>
+                    ${player.hero === 'Знахар' ? '<div>🌿 Бонус Знахаря: +1⚡ +1💰</div>' : ''}
+                </div>
+                <button onclick="closeModal('monsterModal')" class="success">Продовжити</button>
+            </div>
+        `;
+    } else {
+        // Кубик смерті - тестуємо броню
+        const deathRoll = Math.floor(Math.random() * 6) + 1;
+        const survived = deathRoll <= player.armor;
+        
+        if (!survived) {
+            player.health = Math.max(0, player.health - 1);
+            addLog(`${player.name} програв проти ${monster.name}! Кубик смерті: ${deathRoll} > ${player.armor} броні. -1❤️`);
+        } else {
+            addLog(`${player.name} програв проти ${monster.name}, але броня врятувала! Кубик смерті: ${deathRoll} ≤ ${player.armor} броні.`);
+        }
+        
+        document.getElementById('monsterContent').innerHTML = `
+            <div style="text-align: center;">
+                <h3>💀 Поразка!</h3>
+                ${battleDetails}
+                <div style="background: rgba(255,0,0,0.2); padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <div>💀 Кубик смерті: <strong>${deathRoll}</strong> проти <strong>${player.armor}</strong> броні</div>
+                    ${!survived ? '<div style="color: #ff6b6b;">💔 Втрачено 1❤️</div>' : '<div style="color: #90EE90;">🛡️ Броня врятувала!</div>'}
+                </div>
+                <button onclick="closeModal('monsterModal')" class="success">Продовжити</button>
+            </div>
+        `;
+        
+        if (player.health === 0) {
+            setTimeout(() => alert(`💀 ${player.name} загинув!`), 500);
+        }
+    }
+}
+
+function avoidMonster() {
+    addLog(`${gameState.players[gameState.currentPlayerIndex].name} уникнув бою`);
+    closeModal('monsterModal');
+}
+
+function handleRuins() {
+    document.getElementById('ruinsModal').classList.add('active');
+    document.getElementById('ruinsContent').innerHTML = `
+        <div style="text-align: center;">
+            <p>Ви досліджуєте древні руїни...</p>
+            <div style="margin-top: 20px;">
+                <button onclick="exploreRuins()" class="success">🔍 Дослідити</button>
+                <button onclick="closeModal('ruinsModal')">🚪 Піти геть</button>
+            </div>
+        </div>
+    `;
+}
+
+function exploreRuins() {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    const outcomes = ['Карта пригод', 'Супутник', 'Пастка', 'Артефакт 1★'];
+    let cardsToTake = player.hero === 'Алхімік' ? 2 : 1;
+    let results = [];
+    
+    for (let i = 0; i < cardsToTake; i++) {
+        const outcome = outcomes[Math.floor(Math.random() * outcomes.length)];
+        
+        switch(outcome) {
+            case 'Карта пригод':
+                const cards = ['Телепорт +3', 'Лікування +1❤️', 'Подвійне золото', 'Броня +1', 'Швидкість +1'];
+                const card = cards[Math.floor(Math.random() * cards.length)];
+                player.adventureCards.push(card); 
+                addLog(`${player.name} знайшов карту: ${card}`);
+                results.push(`🃏 Карта пригод: ${card}`);
+                break;
+            case 'Супутник':
+                const companion = COMPANIONS[Math.floor(Math.random() * COMPANIONS.length)];
+                if (!player.companions.find(c => c.name === companion.name)) {
+                    player.companions.push(companion); 
+                    addLog(`${player.name} знайшов супутника: ${companion.name}`);
+                    results.push(`🐾 Супутник: ${companion.name} (${companion.ability})`);
+                } else {
+                    results.push(`🐾 Супутник: ${companion.name} (вже є, ігнорується)`);
+                }
+                break;
+            case 'Пастка': 
+                player.health = Math.max(0, player.health - 1); 
+                addLog(`${player.name} потрапив у пастку! -1❤️`);
+                results.push(`🎯 Пастка! Втрачено 1❤️`);
+                break;
+            case 'Артефакт 1★': 
+                const randomType = ARTIFACT_TYPES[Math.floor(Math.random() * ARTIFACT_TYPES.length)];
+                if (!player.artifacts[randomType.name][1]) {
+                    player.artifacts[randomType.name][1] = 0;
+                }
+                player.artifacts[randomType.name][1]++;
+                addLog(`${player.name} знайшов артефакт 1★`);
+                results.push(`${randomType.icon} Артефакт: ${randomType.name} 1★`);
+                break;
+        }
+    }
+    
+    // Показуємо результати дослідження
+    document.getElementById('ruinsContent').innerHTML = `
+        <div style="text-align: center;">
+            <h3>🏺 Результати дослідження:</h3>
+            <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 15px 0;">
+                ${results.map(result => `<div style="margin: 8px 0; font-size: 1.1em;">${result}</div>`).join('')}
+            </div>
+            <button onclick="closeModal('ruinsModal')" class="success">Продовжити</button>
+        </div>
+    `;
+}
+
+function handleCity() {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    const discount = player.hero === 'Торговець' ? 3 : 0;
+    document.getElementById('cityModal').classList.add('active');
+    document.getElementById('cityContent').innerHTML = `
+        <div style="text-align: center;">
+            <h3>🏛️ Місто</h3><p>Що бажаєте купити?</p>
+            <div style="margin-top: 20px;">
+                <button onclick="buyItem('elixir', ${Math.max(1, 3 - discount)})" ${player.gold >= Math.max(1, 3 - discount) ? '' : 'disabled'}>⚡ Еліксир швидкості (${Math.max(1, 3 - discount)}💰)</button><br>
+                <button onclick="buyItem('luck', ${Math.max(1, 2 - discount)})" ${player.gold >= Math.max(1, 2 - discount) ? '' : 'disabled'}>🍀 Сувій удачі (${Math.max(1, 2 - discount)}💰)</button><br>
+                <button onclick="buyWeapon()" class="secondary">🗡️ Купити зброю</button><br>
+                <button onclick="closeModal('cityModal')" style="margin-top: 15px;">🚪 Нічого не купувати</button>
+            </div>
+        </div>
+    `;
+}
+
+function buyItem(type, cost) {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    if (player.gold < cost) { alert('Недостатньо золота!'); return; }
+    player.gold -= cost;
+    switch(type) {
+        case 'elixir': 
+            player.elixirs.speed++; 
+            addLog(`${player.name} купив еліксир швидкості за ${cost}💰`); 
+            break;
+        case 'luck': 
+            player.elixirs.luck++; 
+            addLog(`${player.name} купив сувій удачі за ${cost}💰`); 
+            break;
+    }
+    closeModal('cityModal');
+}
+
+function buyWeapon() {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    const discount = player.hero === 'Торговець' ? 3 : 0;
+    
+    const weapons = [
+        { name: 'Мотузка', price: Math.max(1, 1 - discount), type: 'rope', level: 2 },
+        { name: 'Сокира', price: Math.max(1, 2 - discount), type: 'axe', level: 3 },
+        { name: 'Кинжал', price: Math.max(1, 3 - discount), type: 'dagger', level: 4 },
+        { name: 'Перстень', price: Math.max(1, 4 - discount), type: 'ring', level: 5 }
+    ];
+    
+    document.getElementById('cityContent').innerHTML = `
+        <div style="text-align: center;">
+            <h3>🗡️ Зброярня</h3>
+            <p>Виберіть зброю для купівлі:</p>
+            <div style="margin-top: 20px;">
+                ${weapons.map(weapon => `
+                    <button onclick="buySpecificWeapon('${weapon.type}', ${weapon.price}, '${weapon.name}', ${weapon.level})" 
+                            ${player.gold >= weapon.price ? '' : 'disabled'}
+                            style="margin: 5px; width: 90%;">
+                        ${weapon.name} - ${weapon.price}💰 (проти ${weapon.level}★ монстрів)
+                    </button><br>
+                `).join('')}
+                <button onclick="handleCity()" style="margin-top: 15px;">⬅️ Назад до магазину</button>
+            </div>
+        </div>
+    `;
+}
+
+function buySpecificWeapon(type, cost, name, level) {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    if (player.gold < cost) { alert('Недостатньо золота!'); return; }
+    
+    player.gold -= cost;
+    player.weapons[type]++;
+    addLog(`${player.name} купив ${name} за ${cost}💰 (ефективна проти ${level}★ монстрів)`);
+    closeModal('cityModal');
+}
+
+function handleAdventure() {
+    const cards = ['Телепорт: +3 кроки вперед', 'Лікування: +1❤️', 'Подвійне золото наступного разу', 'Тимчасова броня: +1🛡️', 'Швидкість: +1 хід цього раунду', 'Пошук скарбів: +2💰', 'Магічний щит: імунітет до наступної шкоди', 'Удача: перекинути кубик'];
+    const card = cards[Math.floor(Math.random() * cards.length)];
+    gameState.players[gameState.currentPlayerIndex].adventureCards.push(card);
+    document.getElementById('adventureModal').classList.add('active');
+    document.getElementById('adventureContent').innerHTML = `
+        <div style="text-align: center;">
+            <h3>🃏 Карта пригод!</h3><p>Ви отримали:</p>
+            <div style="background: rgba(255,215,0,0.2); padding: 15px; border-radius: 8px; margin: 15px 0;"><strong>${card}</strong></div>
+            <button onclick="closeModal('adventureModal')">Продовжити</button>
+        </div>
+    `;
+    addLog(`${gameState.players[gameState.currentPlayerIndex].name} отримав карту: ${card}`);
+}
+
+function showInventory() {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    document.getElementById('inventoryModal').classList.add('active');
+    document.getElementById('inventoryContent').innerHTML = `
+        <h3>🛡️ Зброя</h3>
+        <div class="inventory-grid">
+            <div class="inventory-item"><div>Мотузка</div><div class="count">${player.weapons.rope}</div></div>
+            <div class="inventory-item"><div>Сокира</div><div class="count">${player.weapons.axe}</div></div>
+            <div class="inventory-item"><div>Кинжал</div><div class="count">${player.weapons.dagger}</div></div>
+            <div class="inventory-item"><div>Перстень</div><div class="count">${player.weapons.ring}</div></div>
+        </div>
+        <h3 style="margin-top: 20px;">✨ Магічні предмети</h3>
+        <div class="inventory-grid">
+            <div class="inventory-item ${player.elixirs.speed > 0 ? 'usable' : ''}" onclick="${player.elixirs.speed > 0 && !gameState.diceRolled && !gameState.moveComplete ? 'useSpeedElixir()' : ''}">
+                <div>⚡ Еліксир</div><div class="count">${player.elixirs.speed}</div>
+            </div>
+            <div class="inventory-item ${player.elixirs.luck > 0 ? 'usable' : ''}"><div>🍀 Сувій</div><div class="count">${player.elixirs.luck}</div></div>
+        </div>
+        <h3 style="margin-top: 20px;">🃏 Карти пригод (${player.adventureCards.length})</h3>
+        <div style="max-height: 200px; overflow-y: auto;">
+            ${player.adventureCards.map((card, i) => `<div class="inventory-item" style="margin: 5px 0;"><span>${card}</span><button onclick="useAdventureCard(${i})" style="padding: 5px 10px; font-size: 0.9em;">Використати</button></div>`).join('')}
+        </div>
+        <div style="text-align: center; margin-top: 20px;"><button onclick="closeModal('inventoryModal')">Закрити</button></div>
+    `;
+}
+
+function useSpeedElixir() {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    if (player.elixirs.speed > 0 && !gameState.diceRolled && !gameState.moveComplete) {
+        player.elixirs.speed--;
+        if (player.companions.some(c => c.name === 'Білка')) player.gold++;
+        addLog(`${player.name} використав еліксир!`);
+        closeModal('inventoryModal'); rollDice();
+    }
+}
+
+function useAdventureCard(index) {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    const card = player.adventureCards[index];
+    player.adventureCards.splice(index, 1);
+    addLog(`${player.name} використав карту: ${card}`);
+    if (card.includes('Телепорт')) { player.position = Math.min(player.position + 3, BOARD_POSITIONS.length - 1); updatePlayerTokens(true); }
+    else if (card.includes('Лікування')) player.health = Math.min(3, player.health + 1);
+    else if (card.includes('Подвійне золото')) player.gold *= 2;
+    closeModal('inventoryModal'); updateDisplay();
+}
+
+function showAbilities() {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    let html = `<h3>⭐ Вміння героя: ${player.hero}</h3><div class="ability-btn ${player.heroData.abilityType === 'passive' ? 'disabled' : ''}"><strong>${player.heroData.ability}</strong><div style="font-size: 0.85em; color: #aaa; margin-top: 5px;">${player.heroData.abilityType === 'passive' ? '(Пасивне - завжди активне)' : '(Натисніть для використання)'}</div></div>`;
+    if (player.companions.length > 0) {
+        html += '<h3 style="margin-top: 20px;">🐾 Вміння супутників</h3>';
+        player.companions.forEach((companion, i) => {
+            html += `<div class="ability-btn ${companion.type === 'passive' ? 'disabled' : ''}" onclick="${companion.type === 'active' ? `useCompanionAbility(${i})` : ''}"><strong>${companion.name}</strong><div style="font-size: 0.85em; color: #aaa; margin-top: 5px;">${companion.ability} ${companion.type === 'passive' ? ' (Пасивне)' : ' (Активне)'}</div></div>`;
+        });
+    }
+    if (player.hero === 'Кузнець') html += `<h3 style="margin-top: 20px;">🔨 Ковальство</h3><button onclick="smithCraft()" class="success" style="width: 100%;">Об'єднати артефакти</button>`;
+    if (player.hero === 'Маг' && player.usedLuckScrolls.length > 0) html += `<h3 style="margin-top: 20px;">🔮 Магія</h3><button onclick="magRecycleLuck()" class="success" style="width: 100%;">Відновити сувій удачі (${player.usedLuckScrolls.length})</button>`;
+    html += `<div style="text-align: center; margin-top: 20px;"><button onclick="closeModal('abilitiesModal')">Закрити</button></div>`;
+    document.getElementById('abilitiesContent').innerHTML = html;
+    document.getElementById('abilitiesModal').classList.add('active');
+}
+
+function useCompanionAbility(index) {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    const companion = player.companions[index];
+    addLog(`${player.name} використав вміння: ${companion.name}`);
+    if (companion.name === 'Єдиноріг') alert('Поміняйте місцями цифри у наступному кидку кубика');
+    else if (companion.name === 'Грифон') {
+        for (let i = player.position + 1; i < BOARD_POSITIONS.length; i++) {
+            if (BOARD_POSITIONS[i].type === 'monster') { player.position = i; updatePlayerTokens(true); setTimeout(() => handleLocation(), 1200); break; }
+        }
+    } else if (companion.name === 'Кінь') { player.position = Math.min(player.position + 2, BOARD_POSITIONS.length - 1); updatePlayerTokens(true); }
+    closeModal('abilitiesModal'); updateDisplay();
+}
+
+function smithCraft() { alert('Виберіть 2 артефакти одного рівня для об\'єднання в артефакт наступного рівня'); closeModal('abilitiesModal'); }
+
+function magRecycleLuck() {
+    const player = gameState.players[gameState.currentPlayerIndex];
+    const count = player.usedLuckScrolls.length;
+    player.elixirs.luck += count; player.usedLuckScrolls = [];
+    addLog(`${player.name} відновив ${count} сувоїв!`);
+    closeModal('abilitiesModal'); updateDisplay();
+}
+
+function enterCityFromLocation() {
+    handleCity();
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+    if (!gameState.moveComplete) gameState.moveComplete = true;
+    updateDisplay();
+}
+
+function endTurn() {
+    gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+    gameState.diceRolled = false; gameState.moveComplete = false;
+    document.getElementById('diceDisplay').innerHTML = '';
+    updateDisplay(); addLog(`--- ${gameState.players[gameState.currentPlayerIndex].name} ---`);
+}
+
+function addLog(message) {
+    const log = document.getElementById('gameLog'), entry = document.createElement('div');
+    entry.className = 'log-entry'; entry.textContent = message;
+    log.insertBefore(entry, log.firstChild);
+    while (log.children.length > 30) log.removeChild(log.lastChild);
+}
+
+window.addEventListener('load', () => { loadBoardImage(); updateHeroSelection(); });
+    </script>
+</body>
+</html>
