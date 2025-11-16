@@ -1,0 +1,143 @@
+[gd_scene load_steps=2 format=3 uid="uid://cf5ykxuv3n3ym"]
+
+[ext_resource type="Script" path="res://scenes/main_menu/main_menu.gd" id="1_main_menu"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main_menu")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.15, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.8, 0.6, 1)
+theme_override_font_sizes/font_size = 64
+text = "Heroes of Castlevania"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 24
+text = "Мисливці на Дракулу"
+horizontal_alignment = 1
+
+[node name="Spacer1" type="Control" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="ButtonsContainer" type="VBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="HostButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonsContainer"]
+custom_minimum_size = Vector2(300, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "🎮 Створити гру (Host)"
+
+[node name="JoinButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonsContainer"]
+custom_minimum_size = Vector2(300, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "🌐 Приєднатися (Join)"
+
+[node name="SettingsButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonsContainer"]
+custom_minimum_size = Vector2(300, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "⚙️ Налаштування"
+
+[node name="ExitButton" type="Button" parent="CenterContainer/VBoxContainer/ButtonsContainer"]
+custom_minimum_size = Vector2(300, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "🚪 Вихід"
+
+[node name="Spacer2" type="Control" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="VersionLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 16
+text = "v0.1.0 - Alpha | Godot 4.4.1"
+horizontal_alignment = 1
+
+[node name="JoinDialog" type="Window" parent="."]
+title = "Приєднатися до гри"
+initial_position = 2
+size = Vector2i(400, 200)
+visible = false
+
+[node name="VBoxContainer" type="VBoxContainer" parent="JoinDialog"]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 380.0
+offset_bottom = 180.0
+theme_override_constants/separation = 15
+
+[node name="Label" type="Label" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+text = "Введіть IP адресу сервера:"
+
+[node name="IPInput" type="LineEdit" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "127.0.0.1"
+alignment = 1
+
+[node name="Label2" type="Label" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+text = "Порт:"
+
+[node name="PortInput" type="LineEdit" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "7777"
+alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="JoinDialog/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="CancelButton" type="Button" parent="JoinDialog/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(150, 40)
+layout_mode = 2
+text = "Скасувати"
+
+[node name="ConnectButton" type="Button" parent="JoinDialog/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(150, 40)
+layout_mode = 2
+text = "Підключитися"
+
+[connection signal="pressed" from="CenterContainer/VBoxContainer/ButtonsContainer/HostButton" to="." method="_on_host_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/ButtonsContainer/JoinButton" to="." method="_on_join_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/ButtonsContainer/SettingsButton" to="." method="_on_settings_button_pressed"]
+[connection signal="pressed" from="CenterContainer/VBoxContainer/ButtonsContainer/ExitButton" to="." method="_on_exit_button_pressed"]
+[connection signal="pressed" from="JoinDialog/VBoxContainer/HBoxContainer/CancelButton" to="." method="_on_cancel_button_pressed"]
+[connection signal="pressed" from="JoinDialog/VBoxContainer/HBoxContainer/ConnectButton" to="." method="_on_connect_button_pressed"]

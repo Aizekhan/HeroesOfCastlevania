@@ -1,0 +1,160 @@
+[gd_scene load_steps=2 format=3 uid="uid://cljxb42yphw7j"]
+
+[ext_resource type="Script" path="res://scenes/lobby/lobby.gd" id="1_lobby"]
+
+[node name="Lobby" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_lobby")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.15, 0.15, 0.2, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.8, 0.6, 1)
+theme_override_font_sizes/font_size = 48
+text = "🏰 Лобі гри"
+
+[node name="RoomInfo" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 20
+text = "Кімната: 127.0.0.1:7777"
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="MainContent" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 30
+
+[node name="LeftPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/MainContent"]
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="PlayersLabel" type="Label" parent="MarginContainer/VBoxContainer/MainContent/LeftPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 28
+text = "👥 Гравці (0/6)"
+
+[node name="PlayersList" type="VBoxContainer" parent="MarginContainer/VBoxContainer/MainContent/LeftPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/MainContent/LeftPanel/PlayersList"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PlayersContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/MainContent/LeftPanel/PlayersList/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ReadyButton" type="Button" parent="MarginContainer/VBoxContainer/MainContent/LeftPanel"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "✓ Готовий"
+flat = true
+
+[node name="RightPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/MainContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 15
+
+[node name="ChatLabel" type="Label" parent="MarginContainer/VBoxContainer/MainContent/RightPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 28
+text = "💬 Чат"
+
+[node name="ChatContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/MainContent/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="ChatScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer/MainContent/RightPanel/ChatContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+follow_focus = true
+
+[node name="ChatLog" type="RichTextLabel" parent="MarginContainer/VBoxContainer/MainContent/RightPanel/ChatContainer/ChatScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_following = true
+
+[node name="ChatInputContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/MainContent/RightPanel/ChatContainer"]
+layout_mode = 2
+
+[node name="ChatInput" type="LineEdit" parent="MarginContainer/VBoxContainer/MainContent/RightPanel/ChatContainer/ChatInputContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Напишіть повідомлення..."
+
+[node name="SendButton" type="Button" parent="MarginContainer/VBoxContainer/MainContent/RightPanel/ChatContainer/ChatInputContainer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Відправити"
+
+[node name="BottomPanel" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/BottomPanel"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "⬅ Назад"
+
+[node name="Spacer" type="Control" parent="MarginContainer/VBoxContainer/BottomPanel"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="MarginContainer/VBoxContainer/BottomPanel"]
+custom_minimum_size = Vector2(250, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+disabled = true
+text = "🎮 Почати гру"
+
+[connection signal="pressed" from="MarginContainer/VBoxContainer/MainContent/LeftPanel/ReadyButton" to="." method="_on_ready_button_pressed"]
+[connection signal="text_submitted" from="MarginContainer/VBoxContainer/MainContent/RightPanel/ChatContainer/ChatInputContainer/ChatInput" to="." method="_on_chat_input_text_submitted"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/MainContent/RightPanel/ChatContainer/ChatInputContainer/SendButton" to="." method="_on_send_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/BottomPanel/BackButton" to="." method="_on_back_button_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/BottomPanel/StartButton" to="." method="_on_start_button_pressed"]
